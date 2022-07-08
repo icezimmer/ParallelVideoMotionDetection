@@ -1,0 +1,22 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/profeta/ParallelVideoMotionDetection'
+/usr/bin/cmake -H/home/profeta/ParallelVideoMotionDetection -B/home/profeta/ParallelVideoMotionDetection --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/cmake -E cmake_progress_start /home/profeta/ParallelVideoMotionDetection/CMakeFiles /home/profeta/ParallelVideoMotionDetection/CMakeFiles/progress.marks
+make -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/profeta/ParallelVideoMotionDetection'
+make -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/depend
+make[2]: Entering directory '/home/profeta/ParallelVideoMotionDetection'
+cd /home/profeta/ParallelVideoMotionDetection && /usr/bin/cmake -E cmake_depends "Unix Makefiles" /home/profeta/ParallelVideoMotionDetection /home/profeta/ParallelVideoMotionDetection /home/profeta/ParallelVideoMotionDetection /home/profeta/ParallelVideoMotionDetection /home/profeta/ParallelVideoMotionDetection/CMakeFiles/main.dir/DependInfo.cmake --color=
+make[2]: Leaving directory '/home/profeta/ParallelVideoMotionDetection'
+make -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
+make[2]: Entering directory '/home/profeta/ParallelVideoMotionDetection'
+/usr/bin/cmake -E cmake_echo_color --switch= --green --progress-dir=/home/profeta/ParallelVideoMotionDetection/CMakeFiles --progress-num=1 "Building CXX object CMakeFiles/main.dir/main.cpp.o"
+/usr/bin/g++-11   -isystem /usr/local/include/opencv4 -I/home/profeta/ParallelVideoMotionDetection/src -I/home/profeta/ParallelVideoMotionDetection/fastflow  -pthread   -O3 -std=gnu++11 -o CMakeFiles/main.dir/main.cpp.o -c /home/profeta/ParallelVideoMotionDetection/main.cpp
+/usr/bin/cmake -E cmake_echo_color --switch= --green --bold --progress-dir=/home/profeta/ParallelVideoMotionDetection/CMakeFiles --progress-num=2 "Linking CXX executable main"
+/usr/bin/cmake -E cmake_link_script CMakeFiles/main.dir/link.txt --verbose=
+make[2]: Leaving directory '/home/profeta/ParallelVideoMotionDetection'
+/usr/bin/cmake -E cmake_echo_color --switch= --progress-dir=/home/profeta/ParallelVideoMotionDetection/CMakeFiles --progress-num=1,2 "Built target main"
+make[1]: Leaving directory '/home/profeta/ParallelVideoMotionDetection'
+/usr/bin/cmake -E cmake_progress_start /home/profeta/ParallelVideoMotionDetection/CMakeFiles 0
+make: Leaving directory '/home/profeta/ParallelVideoMotionDetection'
+ 
