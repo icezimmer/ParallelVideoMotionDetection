@@ -1,36 +1,84 @@
-#include <iostream>
-#include "opencv2/opencv.hpp"
+// Opencv Library
+#include <opencv2/opencv.hpp>
 
-using namespace std;
+// Fastflow Libraries
+#include <ff/ff.hpp>
+#include <ff/pipeline.hpp>
+#include <ff/farm.hpp>
+#include <ff/parallel_for.hpp>
+#include <ff/map.hpp>
+
+// Useful libraries
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <condition_variable>
+#include <future>
+#include <vector>
+#include <queue>
+
+// More readable code
+using namespace std;	
+using namespace ff;
 using namespace cv;
 
-int main(int argc, char * argv[]) {
+#define ushort unsigned short
+#define ulong unsigned long
+#define BLACK Scalar(0)
+#define VIDEOSOURCE "./data/sample.mp4"
+#define ERROR(cond,msg) if(cond) { cout << msg << endl; exit(-1);}
 
-  VideoCapture cap(argv[1]);
-  
-  while(true) {
-    Mat frame;
+// Include my source
+#include "src/Utimer.cpp"
+#include "src/Utils.cpp" // Shared queue
+#include "src/VideoDetection.cpp"
+#include "src/Sequential.cpp" // Sequential program
+#include "src/NativeParallel.cpp" // Native Parallel program
+#include "src/FastFlow.cpp"
+#include "src/MasterWorker.cpp"
+//#include "src/F.cpp"
 
-    // Capture frame-by-frame
-    cap >> frame;
+int main(int argc,char* argv[]) {
 
-    // If the frame is empty, break immediatelly
-    if(frame.empty()){
-        cout << "WARNING!: Empty frame."<<endl;
-        break;
-    }
+	ERROR(argc<4,"Wrong arguments:\n\tVersion\n\tThreshold in (0,1]\n\tTime execution[ 0 = False| 1 = True]\n\tOptional: Number of workers (>=0)\n")
 
-    cout << "CIAO"<<endl;
-    // Display the resulting frame
-    imshow("Frame", frame );
-    waitKey(25);
+  int version = atoi(argv[1]); // Version
+	float k     = atof(argv[2]); // Threshold for the move detection (percentage [0,1])
+	int stat    = atoi(argv[3]); // Print Statistic
+  int nw     = argc > 4 ? atoi(argv[4]) : thread::hardware_concurrency();
+
+  // Sequential approach
+  if (version == 0) {
+    Sequential s(VIDEOSOURCE,k);
+    if(stat == 0) s.execute_to_result();
+    else if (stat == 1) s.execute_to_stat();
+    else if (stat == 2) s.execute_to_stat2();
+    else exit(1);		
   }
 
-	// When everything done, release the video capture object
-  cap.release();
+  // Native Parallel approach
+  if (version == 1) {
+		NativeParallel np(VIDEOSOURCE,k,nw);
+		if(stat == 0) np.execute_to_result();
+	 	else if (stat == 1) np.execute_to_stat();
+		else exit(1);	
+	}
 
- // Closes all the frames
-  destroyAllWindows();
+  // FastFlow approach
+  if (version == 2) {
+		FastFlow ff(VIDEOSOURCE,k,nw);
+		if(stat == 0) ff.execute_to_result();
+	 	else if (stat == 1) ff.execute_to_stat();
+		else exit(1);	
+	}
 
-  return 0;
+  // Master-Worker approach
+  if (version == 3) {
+		MasterWorker mw(VIDEOSOURCE,k,nw);
+		if(stat == 0) mw.execute_to_result();
+	 	else if (stat == 1) mw.execute_to_stat();
+		else exit(1);	
+	}
+
+	return 0;
 }
