@@ -81,14 +81,15 @@ class MasterWorker {
   
         this->vd = new VideoDetection(width,height,k);
 
-        // ---- First of all we retrieve the background ----
-            Mat frame;        
-            this->background = new Mat(height,width,CV_8UC1,BLACK);
-            // take the fist frame of the video
-            ERROR(!source->read(frame),"Error in read frame operation")
-            vd->RGBtoGray(frame,this->background);
-            vd->smoothing(this->background);
+        // We retrieve the background ----
+            Mat frame;
+            Mat *aux = new Mat(height,width,CV_8UC1,BLACK); // Auxiliar memory frame
+            this->background = new Mat(height,width,CV_8UC1,BLACK);       
+            ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
+            vd->RGBtoGray(frame,aux);
+            vd->smoothing(aux,this->background);
             vd->setBackground(this->background);
+            delete aux;
     }
 
     void execute_to_result() {

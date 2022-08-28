@@ -44,45 +44,37 @@ class Sequential {
 
         // We retrieve the background ----
             Mat frame;
+            Mat *aux = new Mat(height,width,CV_8UC1,BLACK); // Auxiliar memory frame
             this->background = new Mat(height,width,CV_8UC1,BLACK);       
-            // take the fist frame of the video
-            ERROR(!source->read(frame),"Error in read frame operation")
-            // tranform the RGB image into gray scale
-            vd->RGBtoGray(frame,this->background);
-            // Apply the convolution (smoothing)
-            vd->smoothing(this->background);
-            // Set the first frame (greyscaled and smoothed) as background
+            ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
+            vd->RGBtoGray(frame,aux);
+            vd->smoothing(aux,this->background);
             vd->setBackground(this->background);
-
+            delete aux;
     }
 
     void execute_to_result() {
-        // For each frame on the video (starting from 2° frame)
+        // For each frame on the video (starting from 2nd frame)
 
         Mat frame;
 
         // Auxiliar memory frame
-        Mat *aux = new Mat(height,width,CV_8UC1,BLACK);
+        // Mat *aux_gray = new Mat(height,width,CV_8UC1,BLACK);
+        // Mat *aux_smooth = new Mat(height,width,CV_8UC1,BLACK);
 
         for(int f=0;f<totalf-1;f++) {
-            // (1° step) Take next frame of video
             ERROR(!source->read(frame),"Error in read frame operation")
 
-            // (2° step) RGB -> Grayscale
-            //vd->RGBtoGray(frame,aux);
-
-            // (3° step) Smoothing 
-            //vd->smoothing(aux);
-
-            // (4° step) Detecting, returns 0 or 1 if "triggered" or not
-            //totalDiff += vd->detection(aux);
-
-            //totalDiff += vd->smoothDetect(aux);
+            // vd->RGBtoGray(frame,aux_gray);
+            // vd->smoothing(aux_gray,aux_smooth);
+            // totalDiff += vd->detection(aux_smooth);
 
             totalDiff += vd->composition(frame);
         }
-        // clean memory on heap
-        delete aux;
+
+        // Clean memory on heap
+        // delete aux_gray;
+        // delete aux_smooth;
 
         cout << "Number of frames: " << totalf << endl;
         cout << "Number of frames with motion detected: " << totalDiff << endl;
@@ -92,49 +84,47 @@ class Sequential {
     }
 
     void execute_to_stat() {
-        // For each frame on the video (stating from 2° frame)
+        // For each frame on the video (stating from 2nd frame)
 
         Mat frame;
 
         // Auxiliar memory frame
-        Mat *aux = new Mat(height,width,CV_8UC1,BLACK);
+        // Mat *aux_gray = new Mat(height,width,CV_8UC1,BLACK);
+        // Mat *aux_smooth = new Mat(height,width,CV_8UC1,BLACK);
 
         long elapsed_time;
         {   
             utimer u("Sequential",&elapsed_time);
 
             for(int f=0;f<totalf-1;f++) {
-                // (1° step) Take next frame of video
                 ERROR(!source->read(frame),"Error in read frame operation")
 
-                // // (2° step) RGB -> Grayscale
-                // vd->RGBtoGray(frame,aux);
-
-                // // (3° step) Smoothing 
-                // vd->smoothing(aux);
-
-                // // (4° step) Detecting, returns 0 or 1 if "triggered" or not
-                // totalDiff += vd->detection(aux);
+                // vd->RGBtoGray(frame,aux_gray);
+                // vd->smoothing(aux_gray,aux_smooth);
+                // totalDiff += vd->detection(aux_smooth);
 
                 totalDiff += vd->composition(frame);
             }
         }
 
-        delete aux;
+        // Clean memory on heap
+        // delete aux_gray;
+        // delete aux_smooth;
 
         cleanUp();
         exit(0);
     }
 
     void execute_to_stat2() {
-        // For each frame on the video (stating from 2° frame)
+        // For each frame on the video (stating from 2nd frame)
 
         Mat frame;
         
         // Auxiliar memory frame
-        Mat *aux = new Mat(height,width,CV_8UC1,BLACK);
+        Mat *aux_gray = new Mat(height,width,CV_8UC1,BLACK);
+        Mat *aux_smooth = new Mat(height,width,CV_8UC1,BLACK);
 
-        ulong tot_s1 = 0,tot_s2 = 0,tot_s3 = 0,tot_s4 = 0;
+        ulong tot_s1 = 0, tot_sc =0, tot_s2 = 0,tot_s3 = 0,tot_s4 = 0;
 
         for(int f=1;f<totalf;f++) {
             
@@ -145,29 +135,36 @@ class Sequential {
                 ERROR(!source->read(frame),"Error in read frame operation")
             }
             tot_s1 += elapsed_time;
+            {
+                utimer u("COMPOSITION",&elapsed_time);
+                // Composition (RGBtoGray, Smooth and detect)
+                totalDiff += vd->composition(frame);
+            }
+            tot_sc += elapsed_time;
             {   
                 utimer u("RGBtoGRAY",&elapsed_time);
                 // (2° step) RGB -> Grayscale
-                vd->RGBtoGray(frame,aux);
+                vd->RGBtoGray(frame,aux_gray);
             }
             tot_s2 += elapsed_time;
             {   
                 utimer u("SMOOTHING",&elapsed_time);
                 // (3° step) Smoothing 
-                vd->smoothing(aux);
+                vd->smoothing(aux_gray,aux_smooth);
             }
             tot_s3 += elapsed_time;            
             {   
                 utimer u("DETECTION",&elapsed_time);
                 // (4° step) Detecting, returns 0 or 1 if "triggered" or not
-                this->totalDiff += vd->detection(aux);
+                totalDiff += vd->detection(aux_smooth);
             }
             tot_s4 += elapsed_time;
-
         }
-        cout << "READ: " << tot_s1/(totalf-1) << ", RGBtoGray: " << tot_s2/(totalf-1) << ", SMOOTHING: " << tot_s3/(totalf-1) << ", DETECTION: " << tot_s4/(totalf-1) << endl;
+        cout << "READ: " << tot_s1/(totalf-1) << ", COMPOSITION: " << tot_sc/(totalf-1) << ", RGBtoGray: " << tot_s2/(totalf-1) << ", SMOOTHING: " << tot_s3/(totalf-1) << ", DETECTION: " << tot_s4/(totalf-1) << endl;
         
-        delete aux;
+        // Clean memory on heap
+        delete aux_gray;
+        delete aux_smooth;
 
         cleanUp();
         exit(0);      

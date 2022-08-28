@@ -4,7 +4,7 @@ class VideoDetection {
         const int width,height; // Shape of frames
         const int ksize;        // Number of kernel's pixel (square kernel)
         const long fsize;       // Number of frame's pixels
-        const int offset;          // (ksize-1)/2
+        const int offset;       // (ksize-1)/2
         const float k;          // % of pixels that must be different to trigger "detection"
         Mat* background;        // Background image used to comparisons
 
@@ -36,10 +36,11 @@ class VideoDetection {
         We apply the convolution to the image, the covolution is performed passing a matrix/kernel
         which is formed by all one (the result is to take a average of neighboors pixel)  to the grayscale image. 
          */
-        void smoothing(Mat* input) {
+        void smoothing(Mat* input, Mat* output) {
         
             int i,j,c,r,col_LB,col_UB,row_LB,row_UB; 
-            float sum;
+            //float sum;
+            uchar sum;
 
             // For each pixel on grayscale image
             for (i = 0; i < height ; i++) {
@@ -50,7 +51,7 @@ class VideoDetection {
                             for(c=-offset;c<=offset;c++) {
                                 sum += input->at<uchar>(i+r,j+c);
                             }
-                        input->at<uchar>(i, j) = sum/ksize;
+                        output->at<uchar>(i, j) = sum/ksize;
                     }
                     else {
                         row_LB = i > 0 ? -offset : 0;
@@ -61,7 +62,7 @@ class VideoDetection {
                             for(c=col_LB;c<=col_UB;c++) {
                                 sum += input->at<uchar>(i+r,j+c);
                             }
-                        input->at<uchar>(i, j) = sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1));
+                        output->at<uchar>(i, j) = sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1));
                     }
                 }
             }
@@ -74,6 +75,7 @@ class VideoDetection {
 
             int i,j;
             ulong diff = 0;
+            float perc;
 
             // We compare each pixels to perform the difference
             for (i = 0; i < height; i++) {
@@ -84,54 +86,17 @@ class VideoDetection {
             }
 
             // "Differents pixels" are divided by all pixels to obtain a percentage
-            float perc = (((float)diff)/fsize);  
+            perc = (((float)diff)/fsize);  
             // if perc > k then the frame is "different" from background
             return  perc > k ;       
         }
 
-        ushort smoothDetect(const Mat* input) {
-        
-            int i,j,c,r,col_LB,col_UB,row_LB,row_UB; 
-            float sum;
-            ulong diff = 0;
-
-            // For each pixel on grayscale image
-            for (i = 0; i < height ; i++) {
-                for (j = 0; j < width ; j++) {
-                    sum = 0;
-                    if(i>0 && i<height-1 && j>0 && j<width-1) {
-                        for(r=-offset;r<=offset;r++)
-                            for(c=-offset;c<=offset;c++) {
-                                sum += input->at<uchar>(i+r,j+c);
-                            }
-                        diff += background->at<uchar>(i, j) != static_cast<uchar>(sum/ksize);
-                        //diff += background->at<uchar>(i, j) != sum/ksize;
-                    }
-                    else {
-                        row_LB = i > 0 ? -offset : 0;
-                        row_UB = i < height-1 ? offset : 0;
-                        col_LB = j > 0 ? -offset : 0;
-                        col_UB = j < width-1 ? offset : 0;
-                        for(r=row_LB;r<=row_UB;r++)
-                            for(c=col_LB;c<=col_UB;c++) {
-                                sum += input->at<uchar>(i+r,j+c);
-                            }
-                        diff += background->at<uchar>(i, j) != static_cast<uchar>(sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1)));
-                        //diff += background->at<uchar>(i, j) != sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1));
-                    }
-                }
-            }
-
-            // "Differents pixels" are divided by all pixels to obtain a percentage
-            float perc = (((float)diff)/fsize);   
-            // if perc > k then the frame is "different" from background
-            return  perc > k ;        
-        }
-
         ushort composition(const Mat input) {
         
+            const ushort layers = 3;
             int i,j,c,r,col_LB,col_UB,row_LB,row_UB; 
-            float sum;
+            uchar sum;
+            float perc;
             ulong diff = 0;
 
             // For each pixel on grayscale image
@@ -141,10 +106,9 @@ class VideoDetection {
                     if(i>0 && i<height-1 && j>0 && j<width-1) {
                         for(r=-offset;r<=offset;r++)
                             for(c=-offset;c<=offset;c++) {
-                                sum += input.at<Vec3b>(i+r, j+c)[2] + input.at<Vec3b>(i+r, j+c)[1] + input.at<Vec3b>(i+r, j+c)[0];
+                                sum += (input.at<Vec3b>(i+r, j+c)[2] + input.at<Vec3b>(i+r, j+c)[1] + input.at<Vec3b>(i+r, j+c)[0]) / layers;
                             }
-                        diff += background->at<uchar>(i, j) != static_cast<uchar>( sum / (3*ksize) );
-                        //diff += background->at<uchar>(i, j) != sum/ksize;
+                        diff += background->at<uchar>(i, j) != sum / ksize;
                     }
                     else {
                         row_LB = i > 0 ? -offset : 0;
@@ -153,16 +117,15 @@ class VideoDetection {
                         col_UB = j < width-1 ? offset : 0;
                         for(r=row_LB;r<=row_UB;r++)
                             for(c=col_LB;c<=col_UB;c++) {
-                                sum += input.at<Vec3b>(i+r, j+c)[2] + input.at<Vec3b>(i+r, j+c)[1] + input.at<Vec3b>(i+r, j+c)[0];
+                                sum += (input.at<Vec3b>(i+r, j+c)[2] + input.at<Vec3b>(i+r, j+c)[1] + input.at<Vec3b>(i+r, j+c)[0]) / layers;
                             }
-                        diff += background->at<uchar>(i, j) != static_cast<uchar>( sum / ( 3*(row_UB-row_LB+1)*(col_UB-col_LB+1) ) );
-                        //diff += background->at<uchar>(i, j) != sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1));
+                        diff += background->at<uchar>(i, j) != sum / ( (row_UB-row_LB+1)*(col_UB-col_LB+1) );
                     }
                 }
             }
 
             // "Differents pixels" are divided by all pixels to obtain a percentage
-            float perc = (((float)diff)/fsize);   
+            perc = (((float)diff)/fsize);   
             // if perc > k then the frame is "different" from background
             return  perc > k ;        
         }
