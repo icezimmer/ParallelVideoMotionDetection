@@ -53,7 +53,7 @@ class Sequential {
             delete aux;
     }
 
-    void execute_to_result() {
+    void run() {
         // For each frame on the video (starting from 2nd frame)
 
         Mat frame;
@@ -83,7 +83,7 @@ class Sequential {
         exit(0);
     }
 
-    void execute_to_stat() {
+    void time() {
         // For each frame on the video (stating from 2nd frame)
 
         Mat frame;
@@ -115,7 +115,7 @@ class Sequential {
         exit(0);
     }
 
-    void execute_to_stat2() {
+    void each_time() {
         // For each frame on the video (stating from 2nd frame)
 
         Mat frame;

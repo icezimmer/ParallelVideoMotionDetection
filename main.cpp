@@ -45,29 +45,29 @@ int main(int argc,char* argv[]) {
 
 	if (version == 0) {
 		Sequential s(VIDEOSOURCE,k);
-		if(stat == 0) s.execute_to_result();
-		else if (stat == 1) s.execute_to_stat();
-		else if (stat == 2) s.execute_to_stat2();
+		if(stat == 0) s.run();
+		else if (stat == 1) s.time();
+		else if (stat == 2) s.each_time();
 		else exit(1);		
 	}else if (version == 1) {
 		NativeParallel np(VIDEOSOURCE,k,nw);
-		if(stat == 0) np.execute_to_result();
-		else if (stat == 1) np.execute_to_stat();
+		if(stat == 0) np.run();
+		else if (stat == 1) np.time();
 		else exit(1);	
 	}else if (version == 2) {
 		Pipe p(VIDEOSOURCE,k,nw);
-		if(stat == 0) p.execute_to_result();
-		else if (stat == 1) p.execute_to_stat();
+		if(stat == 0) p.run();
+		else if (stat == 1) p.time();
 		else exit(1);	
 	}else if (version == 3) {
 		Farm f(VIDEOSOURCE,k,nw);
-		if(stat == 0) f.execute_to_result();
-		else if (stat == 1) f.execute_to_stat();
+		if(stat == 0) f.run();
+		else if (stat == 1) f.time();
 		else exit(1);	
 	}else if (version == 4) {
 		MasterWorker mw(VIDEOSOURCE,k,nw);
-		if(stat == 0) mw.execute_to_result();
-		else if (stat == 1) mw.execute_to_stat();
+		if(stat == 0) mw.run();
+		else if (stat == 1) mw.time();
 		else exit(1);	
 	}else exit(1);
 

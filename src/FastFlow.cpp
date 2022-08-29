@@ -126,7 +126,7 @@ class Pipe : protected FastFlow {
     public:
         Pipe(const string path,const float k,const int nw) : FastFlow(path,k,nw) {}
 
-        void execute_to_result() {
+        void run() {
             Emitter  emitter(source, totalf);
             Worker wrk(vd);
             Collector  collector(&totalDiff);
@@ -153,7 +153,7 @@ class Pipe : protected FastFlow {
             exit(0);
         }
 
-        void execute_to_stat() {
+        void time() {
             long elapsed;
             {
                 utimer u("FastFlow (Pipeline)",&elapsed);
@@ -187,7 +187,7 @@ class Farm : protected FastFlow {
     public:
         Farm(const string path,const float k,const int nw) : FastFlow(path,k,nw) {}
 
-        void execute_to_result() {
+        void run() {
 
             Emitter  emitter(source, totalf);
             Worker wrk(vd);
@@ -209,7 +209,7 @@ class Farm : protected FastFlow {
             exit(0);
         }
 
-        void execute_to_stat() {
+        void time() {
 
             long elapsed;
             {
@@ -238,7 +238,7 @@ class MasterWorker : protected FastFlow {
     public:
         MasterWorker(const string path,const float k,const int nw) : FastFlow(path,k,nw) {}
 
-        void execute_to_result() {
+        void run() {
 
             EmitterCollector  emittCollect(source, totalf, &totalDiff);
             Worker wrk(vd);
@@ -261,7 +261,7 @@ class MasterWorker : protected FastFlow {
             exit(0);
         }
 
-        void execute_to_stat() {
+        void time() {
 
             long elapsed;
             {

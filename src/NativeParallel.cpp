@@ -119,7 +119,7 @@ class NativeParallel {
                 delete aux;
         }
         
-        void execute_to_result() {
+        void run() {
 
             {
                 threadPool tp(nw);
@@ -150,7 +150,7 @@ class NativeParallel {
         }
 
 
-        void execute_to_stat() {
+        void time() {
             // As before but in this case the measure the time execution
 
             long elapsed;
