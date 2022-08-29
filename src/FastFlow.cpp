@@ -23,6 +23,18 @@ struct Emitter: ff_node_t<Task> {
     }
 };
 
+struct Emitter_oh: ff_node_t<Task> {
+    const int totalf;
+    Emitter_oh(const int totalf):totalf(totalf) {}
+    Task* svc(Task *) {
+        for(int f=0; f<totalf-1; f++) {
+            Task* tsk = new Task();;
+            ff_send_out(tsk);
+        }
+        return EOS;
+    }
+};
+
 struct Worker: ff_node_t<Task> {
     VideoDetection* vd;
 
@@ -30,6 +42,12 @@ struct Worker: ff_node_t<Task> {
 
     Task* svc(Task * tsk) { 
         tsk->detected = vd->composition(tsk->frame);
+        return tsk; 
+    }
+};
+
+struct Worker_oh: ff_node_t<Task> {
+    Task* svc(Task * tsk) { 
         return tsk; 
     }
 };
@@ -45,6 +63,14 @@ struct Collector: ff_node_t<Task> {
         return GO_ON; 
     }
 };
+
+struct Collector_oh: ff_node_t<Task> {
+    Task* svc(Task * tsk) { 
+        delete tsk;
+        return GO_ON; 
+    }
+};
+
 
 struct EmitterCollector: ff_node_t<Task> {
     VideoCapture* source;
@@ -65,6 +91,24 @@ struct EmitterCollector: ff_node_t<Task> {
             return GO_ON;
         }        
         *totalDiff += tsk->detected;
+        delete tsk;
+        if (++n_tasks == totalf-1) return EOS;
+        return GO_ON;         
+    }
+};
+
+struct EmitterCollector_oh: ff_node_t<Task> {
+    const int totalf;
+    int n_tasks;
+    EmitterCollector_oh(const int totalf):totalf(totalf),n_tasks(0) {}
+    Task* svc(Task *tsk) {
+        if (tsk == nullptr) {
+            for(int f=0; f<totalf-1; f++) {
+                Task* tsk = new Task();
+                ff_send_out(tsk);
+            }
+            return GO_ON;
+        }        
         delete tsk;
         if (++n_tasks == totalf-1) return EOS;
         return GO_ON;         
@@ -181,6 +225,34 @@ class Pipe : protected FastFlow {
             cleanUp();
             exit(0);
         }
+
+        void overhead() {
+            long elapsed;
+            {
+                utimer u("OVERHEAD [FastFlow (Pipeline)]",&elapsed);
+                Emitter_oh  emitter(totalf);
+                Collector_oh  collector;
+
+                ff_Farm<Task> farm(
+                    [&]() {
+                        vector<unique_ptr<ff_node> > W;
+                        for(int i=0;i<nw;++i)
+                            W.push_back(make_unique<Worker_oh>());
+                        return W;
+                    } ()
+                );
+
+                ff_Pipe pipe(emitter, farm, collector);
+
+                if (pipe.run_and_wait_end()<0) {
+                    error("running pipe");
+                    exit(1);
+                }
+            }
+
+            cleanUp();
+            exit(0);
+        }
 };
 
 class Farm : protected FastFlow {
@@ -220,6 +292,29 @@ class Farm : protected FastFlow {
 
                 vector<unique_ptr<ff_node> > W;
                 for(int i=0;i<nw;++i) W.push_back(make_unique<Worker>(wrk));
+
+                ff_Farm<Task> farm(move(W), emitter, collector);
+
+                if (farm.run_and_wait_end()<0) {
+                    error("running farm");
+                    exit(1);
+                }
+            }
+
+            cleanUp();
+            exit(0);
+        }
+
+        void overhead() {
+
+            long elapsed;
+            {
+                utimer u("OVERHEAD [FastFlow (Farm)]",&elapsed);
+                Emitter_oh  emitter(totalf);
+                Collector_oh  collector;
+
+                vector<unique_ptr<ff_node> > W;
+                for(int i=0;i<nw;++i) W.push_back(make_unique<Worker_oh>());
 
                 ff_Farm<Task> farm(move(W), emitter, collector);
 
@@ -272,6 +367,31 @@ class MasterWorker : protected FastFlow {
 
                 vector<unique_ptr<ff_node> > W;
                 for(int i=0;i<nw;++i) W.push_back(make_unique<Worker>(wrk));
+
+                ff_Farm<Task> farm(move(W), emittCollect);
+                farm.remove_collector(); // remove the collector (it is present by default in the ff_Farm)
+                farm.wrap_around();
+
+                if (farm.run_and_wait_end()<0) {
+                    error("running farm");
+                    exit(1);
+                }
+            }
+
+            cleanUp();
+            exit(0);
+        }
+
+        void overhead() {
+
+            long elapsed;
+            {
+                utimer u("OVERHEAD [FastFlow (MasterWorker)]",&elapsed);
+                
+                EmitterCollector_oh  emittCollect(totalf);
+
+                vector<unique_ptr<ff_node> > W;
+                for(int i=0;i<nw;++i) W.push_back(make_unique<Worker_oh>());
 
                 ff_Farm<Task> farm(move(W), emittCollect);
                 farm.remove_collector(); // remove the collector (it is present by default in the ff_Farm)

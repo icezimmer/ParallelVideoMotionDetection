@@ -40,34 +40,38 @@ int main(int argc,char* argv[]) {
 
 	int version = atoi(argv[1]); // Version
 	float k     = atof(argv[2]); // Threshold for the move detection (percentage in (0,1])
-	int stat    = atoi(argv[3]); // Print elapsed time
-	int nw     = argc > 4 ? atoi(argv[4]) : thread::hardware_concurrency();
+	int out     = atoi(argv[3]); // Type of output
+	int nw      = argc > 4 ? atoi(argv[4]) : thread::hardware_concurrency();
 
 	if (version == 0) {
 		Sequential s(VIDEOSOURCE,k);
-		if(stat == 0) s.run();
-		else if (stat == 1) s.time();
-		else if (stat == 2) s.each_time();
+		if(out == 0) s.run();
+		else if (out == 1) s.time();
+		else if (out == 2) s.each_time();
 		else exit(1);		
 	}else if (version == 1) {
 		NativeParallel np(VIDEOSOURCE,k,nw);
-		if(stat == 0) np.run();
-		else if (stat == 1) np.time();
+		if(out == 0) np.run();
+		else if (out == 1) np.time();
+		else if (out == 2) np.overhead();
 		else exit(1);	
 	}else if (version == 2) {
 		Pipe p(VIDEOSOURCE,k,nw);
-		if(stat == 0) p.run();
-		else if (stat == 1) p.time();
+		if(out == 0) p.run();
+		else if (out == 1) p.time();
+		else if (out == 2) p.overhead();
 		else exit(1);	
 	}else if (version == 3) {
 		Farm f(VIDEOSOURCE,k,nw);
-		if(stat == 0) f.run();
-		else if (stat == 1) f.time();
+		if(out == 0) f.run();
+		else if (out == 1) f.time();
+		else if (out == 2) f.overhead();
 		else exit(1);	
 	}else if (version == 4) {
 		MasterWorker mw(VIDEOSOURCE,k,nw);
-		if(stat == 0) mw.run();
-		else if (stat == 1) mw.time();
+		if(out == 0) mw.run();
+		else if (out == 1) mw.time();
+		else if (out == 2) mw.overhead();
 		else exit(1);	
 	}else exit(1);
 
