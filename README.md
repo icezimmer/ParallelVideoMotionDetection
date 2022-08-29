@@ -21,4 +21,6 @@ where<br>
 * nw = number of worker (optional)<br>
 
 To see the parallel degree<br>
-    for nw in {1..32}; do ./main 1 0.85 [1 | 2] $nw; done<br>
+```
+    for nw in {1..32}; do ./main 1 0.85 [1 | 2] $nw; done
+```
