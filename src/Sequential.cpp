@@ -131,31 +131,26 @@ class Sequential {
             long elapsed_time;
             {   
                 utimer u("READ",&elapsed_time);
-                // (1° step) Take next frame of video
                 ERROR(!source->read(frame),"Error in read frame operation")
             }
             tot_s1 += elapsed_time;
             {
                 utimer u("COMPOSITION",&elapsed_time);
-                // Composition (RGBtoGray, Smooth and detect)
                 totalDiff += vd->composition(frame);
             }
             tot_sc += elapsed_time;
             {   
                 utimer u("RGBtoGRAY",&elapsed_time);
-                // (2° step) RGB -> Grayscale
                 vd->RGBtoGray(frame,aux_gray);
             }
             tot_s2 += elapsed_time;
             {   
                 utimer u("SMOOTHING",&elapsed_time);
-                // (3° step) Smoothing 
                 vd->smoothing(aux_gray,aux_smooth);
             }
             tot_s3 += elapsed_time;            
             {   
                 utimer u("DETECTION",&elapsed_time);
-                // (4° step) Detecting, returns 0 or 1 if "triggered" or not
                 totalDiff += vd->detection(aux_smooth);
             }
             tot_s4 += elapsed_time;

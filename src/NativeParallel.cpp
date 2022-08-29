@@ -70,69 +70,95 @@ public:
 class NativeParallel {
 
     private:
-    VideoCapture* source;     // Source of video
-    int width,height;         // Shape of frame
-    int totalf;               // Number of total frame in the video
-    VideoDetection* vd;
-    Mat* background;          // Background images used for comparisons
-    ulong totalDiff;  // Variable used to accomulate frame "detected"
-    int nw;                   // Number of workers
+        VideoCapture* source;     // Source of video
+        int width,height;         // Shape of frame
+        int totalf;               // Number of total frame in the video
+        VideoDetection* vd;
+        Mat* background;          // Background images used for comparisons
+        ulong totalDiff;  // Variable used to accomulate frame "detected"
+        int nw;                   // Number of workers
 
-    void cleanUp() {
-        source->release();
-        delete background;
-        delete source;
-        delete vd;
-    }
+        void cleanUp() {
+            source->release();
+            delete background;
+            delete source;
+            delete vd;
+        }
 
     public:
-    NativeParallel(const string path,const float k,const int nw):
-        totalDiff(0),nw(nw) {
+        NativeParallel(const string path,const float k,const int nw):
+            totalDiff(0),nw(nw) {
 
-        // checking argument
-        ERROR(path == "","path error")
-        ERROR(k<= 0 || k>1,"%'of pixel must be between 0 and 1")
-        ERROR(nw<= 0,"Workers must be more than 0")
+            // checking argument
+            ERROR(path == "","path error")
+            ERROR(k<= 0 || k>1,"%'of pixel must be between 0 and 1")
+            ERROR(nw<= 0,"Workers must be more than 0")
 
-        this->source = new VideoCapture(path); 
+            this->source = new VideoCapture(path); 
 
-        // Check if the video is opened
-        ERROR(!source->isOpened(),"Error opening video")
+            // Check if the video is opened
+            ERROR(!source->isOpened(),"Error opening video")
 
-        this->width  = source->get(CAP_PROP_FRAME_WIDTH);
-        this->height = source->get(CAP_PROP_FRAME_HEIGHT);
-        this->totalf = source->get(CAP_PROP_FRAME_COUNT);
+            this->width  = source->get(CAP_PROP_FRAME_WIDTH);
+            this->height = source->get(CAP_PROP_FRAME_HEIGHT);
+            this->totalf = source->get(CAP_PROP_FRAME_COUNT);
 
-        // We need at least 2 frame: one is the background, the other is the frame to compare
-        ERROR(totalf<3,"Too short video")
+            // We need at least 2 frame: one is the background, the other is the frame to compare
+            ERROR(totalf<3,"Too short video")
 
-        this->vd = new VideoDetection(width,height,k);
+            this->vd = new VideoDetection(width,height,k);
 
-        // We retrieve the background ----
-            Mat frame;
-            Mat *aux = new Mat(height,width,CV_8UC1,BLACK); // Auxiliar memory frame
-            this->background = new Mat(height,width,CV_8UC1,BLACK);       
-            ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
-            vd->RGBtoGray(frame,aux);
-            vd->smoothing(aux,this->background);
-            vd->setBackground(this->background);
-            delete aux;
-    }
-    
-    void execute_to_result() {
+            // We retrieve the background ----
+                Mat frame;
+                Mat *aux = new Mat(height,width,CV_8UC1,BLACK); // Auxiliar memory frame
+                this->background = new Mat(height,width,CV_8UC1,BLACK);       
+                ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
+                vd->RGBtoGray(frame,aux);
+                vd->smoothing(aux,this->background);
+                vd->setBackground(this->background);
+                delete aux;
+        }
+        
+        void execute_to_result() {
 
-        // Create a Shared Queue
-        //SQueue* q = new SQueue();
+            {
+                threadPool tp(nw);
 
-        {
+                function<void(Mat)> work = [&] (Mat frame) { 
+                        totalDiff += vd->composition(frame);
+                        return;
+                    };
+
+                auto frame_streaming = [&] (int totalf) {
+                    for(int f=0;f<totalf-1;f++){
+                        Mat frame;
+                        ERROR(!source->read(frame),"Error in read frame operation")
+                        auto work_frame = bind(work,frame);
+                        tp.submit(work_frame); //submit the task
+                    }
+                };
+
+                thread tid_str(frame_streaming, totalf);
+                tid_str.join();
+            }
+
+            cout << "Total frame: " << totalf << endl;
+            cout << "Total diff: " << totalDiff << endl;
+            cleanUp();
+            exit(0);
+
+        }
+
+
+        void execute_to_stat() {
+            // As before but in this case the measure the time execution
+
+            long elapsed;
+            {   
+            utimer u("NativeParallel",&elapsed);
             threadPool tp(nw);
 
-            //mutex m_work;
             function<void(Mat)> work = [&] (Mat frame) { 
-                    // {
-                    //     lock_guard<mutex> lg(m_work);
-                    //     totalDiff += vd->composition(frame);
-                    // }
                     totalDiff += vd->composition(frame);
                     return;
                 };
@@ -148,49 +174,9 @@ class NativeParallel {
 
             thread tid_str(frame_streaming, totalf);
             tid_str.join();
+            }
+
+            cleanUp();
+            exit(0); 
         }
-
-        cout << "Total frame: " << totalf << endl;
-        cout << "Total diff: " << totalDiff << endl;
-        cleanUp();
-        exit(0);
-
-    }
-
-
-     void execute_to_stat() {
-        // As before but in this case the measure the time execution
-        
-        //SQueue* q = new SQueue();
-        long elapsed;
-        {   
-           utimer u("NativeParallel",&elapsed);
-           threadPool tp(nw);
-
-           mutex m_work;
-           function<void(Mat)> work = [&] (Mat frame) { 
-                   //{
-                   //    lock_guard<mutex> lg(m_work);
-                   //    totalDiff += vd->composition(frame);
-                   //}
-                   totalDiff += vd->composition(frame);
-                   return;
-               };
-
-           auto frame_streaming = [&] (int totalf) {
-               for(int f=0;f<totalf-1;f++){
-                   Mat frame;
-                   ERROR(!source->read(frame),"Error in read frame operation")
-                   auto work_frame = bind(work,frame);
-                   tp.submit(work_frame); //submit the task
-               }
-           };
-
-           thread tid_str(frame_streaming, totalf);
-           tid_str.join();
-        }
-
-        cleanUp();
-        exit(0); 
-     }
 };
