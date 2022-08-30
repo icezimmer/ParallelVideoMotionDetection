@@ -124,10 +124,10 @@ class NativeParallel {
             {
                 threadPool tp(nw);
 
-                function<void(Mat)> work = [&] (Mat frame) { 
-                        totalDiff += vd->composition(frame);
-                        return;
-                    };
+                function<void(Mat)> work = [&] (Mat frame) {
+                    totalDiff += vd->composition(frame);
+                    return;
+                };
 
                 auto frame_streaming = [&] (int totalf) {
                     for(int f=0;f<totalf-1;f++){
