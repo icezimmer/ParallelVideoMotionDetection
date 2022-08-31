@@ -110,13 +110,13 @@ class NativeParallel {
 
             // We retrieve the background ----
                 Mat frame;
-                Mat *aux = new Mat(height+1,width+1,CV_8UC1,BLACK); // Auxiliar memory frame
+                Mat *grey_pad = new Mat(height+1,width+1,CV_8UC1,BLACK); // Auxiliar memory frame
                 this->background = new Mat(height,width,CV_8UC1,BLACK);       
                 ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
-                vd->RGBtoGray_pad(frame,aux);
-                vd->smoothing_pad(aux,this->background);
+                vd->RGBtoGrey_pad(frame,grey_pad);
+                vd->smoothing_pad(grey_pad,this->background);
                 vd->setBackground(this->background);
-                delete aux;
+                delete grey_pad;
         }
         
         void run() {

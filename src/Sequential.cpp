@@ -39,18 +39,18 @@ class Sequential {
         // We need at least 2 frame: one is the background, the other is the frame to compare
         ERROR(totalf<3,"Too short video")
 
-        // methods like RGBtoGray, smoothing ecc..
+        // methods like RGBtoGrey, smoothing ecc..
         this->vd = new VideoDetection(width,height,k);
 
         // We retrieve the background ----
             Mat frame;
-            Mat *aux = new Mat(height+1,width+1,CV_8UC1,BLACK); // Auxiliar memory frame
+            Mat *grey_pad = new Mat(height+1,width+1,CV_8UC1,BLACK); // Auxiliar memory frame
             this->background = new Mat(height,width,CV_8UC1,BLACK);       
             ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
-            vd->RGBtoGray_pad(frame,aux);
-            vd->smoothing_pad(aux,this->background);
+            vd->RGBtoGrey_pad(frame,grey_pad);
+            vd->smoothing_pad(grey_pad,this->background);
             vd->setBackground(this->background);
-            delete aux;
+            delete grey_pad;
     }
 
     void run() {
@@ -93,9 +93,9 @@ class Sequential {
         Mat frame;
         
         // Auxiliar memory frame
-        Mat *aux_gray = new Mat(height,width,CV_8UC1,BLACK);
-        Mat *aux_gray_pad = new Mat(height+1,width+1,CV_8UC1,BLACK);
-        Mat *aux_smooth = new Mat(height,width,CV_8UC1,BLACK);
+        Mat *grey = new Mat(height,width,CV_8UC1,BLACK);
+        Mat *grey_pad = new Mat(height+1,width+1,CV_8UC1,BLACK);
+        Mat *smooth = new Mat(height,width,CV_8UC1,BLACK);
 
         ulong tot_r = 0, tot_g = 0,tot_gp = 0,tot_s = 0,tot_sp = 0,tot_d = 0,tot_c =0,tot_cp =0;
 
@@ -109,27 +109,27 @@ class Sequential {
             tot_r += elapsed_time;
             {   
                 utimer u("RGBtoGRAY",&elapsed_time);
-                vd->RGBtoGray(frame,aux_gray);
+                vd->RGBtoGrey(frame,grey);
             }
             tot_g += elapsed_time;
             {   
                 utimer u("RGBtoGRAY_pad",&elapsed_time);
-                vd->RGBtoGray_pad(frame,aux_gray_pad);
+                vd->RGBtoGrey_pad(frame,grey_pad);
             }
             tot_gp += elapsed_time;
             {   
                 utimer u("SMOOTHING",&elapsed_time);
-                vd->smoothing(aux_gray,aux_smooth);
+                vd->smoothing(grey,smooth);
             }
             tot_s += elapsed_time;
             {   
                 utimer u("SMOOTHING_pad",&elapsed_time);
-                vd->smoothing_pad(aux_gray_pad,aux_smooth);
+                vd->smoothing_pad(grey_pad,smooth);
             }
             tot_sp += elapsed_time;             
             {   
                 utimer u("DETECTION",&elapsed_time);
-                totalDiff += vd->detection(aux_smooth);
+                totalDiff += vd->detection(smooth);
             }
             tot_d += elapsed_time;
                         {
@@ -143,16 +143,16 @@ class Sequential {
             }
             tot_cp += elapsed_time;
         }
-        cout << "READ: " << tot_r/(totalf-1) << ", RGBtoGray: " << tot_g/(totalf-1) << ", RGBtoGray_pad: " << tot_gp/(totalf-1) <<  ", SMOOTHING: " << tot_s/(totalf-1) << ", SMOOTHING_pad: " << tot_sp/(totalf-1) << ", DETECTION: " << tot_d/(totalf-1) << ", COMPOSITION: " << tot_c/(totalf-1) << ", COMPOSITION_pad: " << tot_cp/(totalf-1) << endl;
+        cout << "READ: " << tot_r/(totalf-1) << ", RGBtoGrey: " << tot_g/(totalf-1) << ", RGBtoGrey_pad: " << tot_gp/(totalf-1) <<  ", SMOOTHING: " << tot_s/(totalf-1) << ", SMOOTHING_pad: " << tot_sp/(totalf-1) << ", DETECTION: " << tot_d/(totalf-1) << ", COMPOSITION: " << tot_c/(totalf-1) << ", COMPOSITION_pad: " << tot_cp/(totalf-1) << endl;
         cout << "std: " << tot_r+tot_g+tot_s+tot_d << endl;
         cout << "std_pad: " << tot_r+tot_gp+tot_sp+tot_d << endl;
         cout << "comp: " << tot_c << endl;
         cout << "comp_pad: " << tot_cp << endl;
         
         // Clean memory on heap
-        delete aux_gray;
-        delete aux_gray_pad;
-        delete aux_smooth;
+        delete grey;
+        delete grey_pad;
+        delete smooth;
 
         cleanUp();
         exit(0);      

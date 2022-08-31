@@ -17,7 +17,7 @@ class VideoDetection {
             this->background = background;
         }
 
-        void RGBtoGray(const Mat input, Mat* output) {
+        void RGBtoGrey(const Mat input, Mat* output) {
             int i,j;
 
             for (i = 0; i < height; i++) {
@@ -27,7 +27,7 @@ class VideoDetection {
             }
         }
 
-        void RGBtoGray_pad(const Mat input, Mat* output) {
+        void RGBtoGrey_pad(const Mat input, Mat* output) {
             int i,j;
 
             for (i = 0; i < height; i++) {
@@ -140,20 +140,18 @@ class VideoDetection {
             uchar sum;
             float perc;
             ulong diff = 0;
-            Mat padded = Mat(height+1,width+1,CV_8UC1,BLACK);
+            Mat aux = Mat(height+1,width+1,CV_8UC1,BLACK);
 
             for (i = 0; i < height ; i++)
                 for (j = 0; j < width ; j++)
-                    padded.at<uchar>(i+offset,j+offset) = (input.at<Vec3b>(i, j)[2] + input.at<Vec3b>(i, j)[1] + input.at<Vec3b>(i, j)[0]) / layers;
+                    aux.at<uchar>(i+offset,j+offset) = (input.at<Vec3b>(i, j)[2] + input.at<Vec3b>(i, j)[1] + input.at<Vec3b>(i, j)[0]) / layers;
 
             for (i = 0; i < height ; i++) {
                 for (j = 0; j < width ; j++) {
                     sum = 0;
                      for(r=-offset;r<=offset;r++)
                          for(c=-offset;c<=offset;c++) 
-                             sum += padded.at<uchar>(i+offset+r, j+offset+c);
-                    //sum = padded.at<uchar>(i+offset-1, j+offset-1)+padded.at<uchar>(i+offset-1, j+offset)+padded.at<uchar>(i+offset-1, j+offset+1)+padded.at<uchar>(i+offset, j+offset-1)+padded.at<uchar>(i+offset, j+offset)+padded.at<uchar>(i+offset, j+offset+1)+padded.at<uchar>(i+offset+1, j+offset-1)+padded.at<uchar>(i+offset+1, j+offset)+padded.at<uchar>(i+offset+1, j+offset+1);
-
+                             sum += aux.at<uchar>(i+offset+r, j+offset+c);
                     diff += background->at<uchar>(i, j) != sum/ksize;
                 }
             }
