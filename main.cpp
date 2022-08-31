@@ -47,8 +47,8 @@ int main(int argc,char* argv[]) {
 		Sequential s(VIDEOSOURCE,k);
 		if(out == 0) s.run();
 		else if (out == 1) s.time();
-		else if (out == 2) s.each_time();
-		else exit(1);		
+		else if (out == 2) s.stats();
+		else exit(1);	
 	}else if (version == 1) {
 		NativeParallel np(VIDEOSOURCE,k,nw);
 		if(out == 0) np.run();

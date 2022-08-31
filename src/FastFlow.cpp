@@ -41,7 +41,7 @@ struct Worker: ff_node_t<Task> {
     Worker(VideoDetection* vd):vd(vd) {}
 
     Task* svc(Task * tsk) { 
-        tsk->detected = vd->composition(tsk->frame);
+        tsk->detected = vd->composition_pad(tsk->frame);
         return tsk; 
     }
 };
@@ -156,11 +156,11 @@ class FastFlow {
 
             // We retrieve the background ----
                 Mat frame;
-                Mat *aux = new Mat(height,width,CV_8UC1,BLACK); // Auxiliar memory frame
+                Mat *aux = new Mat(height+1,width+1,CV_8UC1,BLACK); // Auxiliar memory frame
                 this->background = new Mat(height,width,CV_8UC1,BLACK);       
                 ERROR(!source->read(frame),"Error in read frame operation") // Take the fist frame of the video
-                vd->RGBtoGray(frame,aux);
-                vd->smoothing(aux,this->background);
+                vd->RGBtoGray_pad(frame,aux);
+                vd->smoothing_pad(aux,this->background);
                 vd->setBackground(this->background);
                 delete aux;
         }

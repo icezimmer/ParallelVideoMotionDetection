@@ -27,8 +27,18 @@ class VideoDetection {
             }
         }
 
+        void RGBtoGray_pad(const Mat input, Mat* output) {
+            int i,j;
+
+            for (i = 0; i < height; i++) {
+                for (j = 0; j < width; j++){
+                    output->at<uchar>(i+offset, j+offset) = (input.at<Vec3b>(i, j)[2] + input.at<Vec3b>(i, j)[1] + input.at<Vec3b>(i, j)[0]) / 3;
+                }
+            }
+        }
+
         void smoothing(Mat* input, Mat* output) {       
-            int i,j,c,r,col_LB,col_UB,row_LB,row_UB; 
+            int i,j,r,c,col_LB,col_UB,row_LB,row_UB; 
             uchar sum;
 
             for (i = 0; i < height ; i++) {
@@ -50,8 +60,23 @@ class VideoDetection {
                             for(c=col_LB;c<=col_UB;c++) {
                                 sum += input->at<uchar>(i+r,j+c);
                             }
-                        output->at<uchar>(i, j) = sum / ((row_UB-row_LB+1)*(col_UB-col_LB+1));
+                        output->at<uchar>(i, j) = sum/ksize;
                     }
+                }
+            }
+        }
+
+        void smoothing_pad(Mat* input, Mat* output) {       
+            int i,j,r,c;
+            uchar sum;
+
+            for (i = 0; i < height ; i++) {
+                for (j = 0; j < width ; j++) {
+                    sum = 0;
+                    for(r=-offset;r<=offset;r++)
+                        for(c=-offset;c<=offset;c++) 
+                            sum += input->at<uchar>(i+offset+r, j+offset+c);
+                    output->at<uchar>(i,j) = sum / ksize;
                 }
             }
         }
@@ -98,13 +123,44 @@ class VideoDetection {
                             for(c=col_LB;c<=col_UB;c++) {
                                 sum += (input.at<Vec3b>(i+r, j+c)[2] + input.at<Vec3b>(i+r, j+c)[1] + input.at<Vec3b>(i+r, j+c)[0]) / layers;
                             }
-                        diff += background->at<uchar>(i, j) != sum / ( (row_UB-row_LB+1)*(col_UB-col_LB+1) );
+                        diff += background->at<uchar>(i, j) != sum / ksize;
                     }
                 }
             }
 
             // "Differents pixels" are divided by all pixels to obtain a percentage
             perc = (((float)diff)/fsize);
+            return  perc > k ;        
+        }
+
+        ushort composition_pad(const Mat input) {
+            const ushort layers = 3;
+            int i,j,r,c;
+            //int i,j;
+            uchar sum;
+            float perc;
+            ulong diff = 0;
+            Mat padded = Mat(height+1,width+1,CV_8UC1,BLACK);
+
+            for (i = 0; i < height ; i++)
+                for (j = 0; j < width ; j++)
+                    padded.at<uchar>(i+offset,j+offset) = (input.at<Vec3b>(i, j)[2] + input.at<Vec3b>(i, j)[1] + input.at<Vec3b>(i, j)[0]) / layers;
+
+            for (i = 0; i < height ; i++) {
+                for (j = 0; j < width ; j++) {
+                    sum = 0;
+                     for(r=-offset;r<=offset;r++)
+                         for(c=-offset;c<=offset;c++) 
+                             sum += padded.at<uchar>(i+offset+r, j+offset+c);
+                    //sum = padded.at<uchar>(i+offset-1, j+offset-1)+padded.at<uchar>(i+offset-1, j+offset)+padded.at<uchar>(i+offset-1, j+offset+1)+padded.at<uchar>(i+offset, j+offset-1)+padded.at<uchar>(i+offset, j+offset)+padded.at<uchar>(i+offset, j+offset+1)+padded.at<uchar>(i+offset+1, j+offset-1)+padded.at<uchar>(i+offset+1, j+offset)+padded.at<uchar>(i+offset+1, j+offset+1);
+
+                    diff += background->at<uchar>(i, j) != sum/ksize;
+                }
+            }
+
+            // "Differents pixels" are divided by all pixels to obtain a percentage
+            perc = (((float)diff)/fsize);   
+            // if perc > k then the frame is "different" from background
             return  perc > k ;        
         }
         

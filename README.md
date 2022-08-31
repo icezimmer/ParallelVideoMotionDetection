@@ -20,7 +20,9 @@ where<br>
         2 = Compute the time of the single operation for each frame, and finally the means (for SEQUENTIAL) | Compute overhead (for PARALLEL)]<br>
 * nw = number of worker (optional)<br>
 
+Add the flag ``-fopt-info-vec-all`` to see all the optimizated loop (vectorization), with ``|& grep 'optimized: loop'`` at the end
+
 To see the parallel degree<br>
 ```
-    for nw in {1..32}; do ./main 1 0.85 [0 | 1 | 2] $nw; done
+    for nw in {1..32}; do for t in {1..5}; do ./main 1 0.85 [0 | 1 | 2] $nw |& grep -Eo '[0-9]'; done; done
 ```
