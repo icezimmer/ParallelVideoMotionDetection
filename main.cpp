@@ -36,7 +36,7 @@ using namespace cv;
 
 int main(int argc,char* argv[]) {
 
-	ERROR(argc<4,"Wrong arguments:\n\tVersion[ 0 = Sequential| 1 = NativeParallel| 2 = Pipeline(FF)| 3 = Farm(FF)| 4 = MasterWorker(FF))]\n\tThreshold in (0,1]\n\tOutput[ 0 = Result| 1 = Time| 2 = More]\n\tOptional: Number of workers (>=0)\n")
+	ERROR(argc<4,"Wrong arguments:\n\tVersion: [ 0 = Sequential| 1 = NativeParallel| 2 = Pipeline(FF)| 3 = Farm(FF)| 4 = MasterWorker(FF))]\n\tThreshold: value in (0,1]\n\tOutput: [ 0 = Result| 1 = Time| 2 = More]\n\tOptional: Number of workers (>=0)\n")
 
 	int version = atoi(argv[1]); // Version
 	float k     = atof(argv[2]); // Threshold for the move detection (percentage in (0,1])
