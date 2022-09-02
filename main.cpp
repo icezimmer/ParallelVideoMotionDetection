@@ -36,7 +36,7 @@ using namespace cv;
 
 int main(int argc,char* argv[]) {
 
-	ERROR(argc<4,"Wrong arguments:\n\tVersion: [ 0 = Sequential| 1 = NativeParallel| 2 = Pipeline(FF)| 3 = Farm(FF)| 4 = MasterWorker(FF))]\n\tThreshold: value in (0,1]\n\tOutput: [ 0 = Result| 1 = Time| 2 = More]\n\tOptional: Number of workers (>=0)\n")
+	ERROR(argc<4,"Wrong arguments:\n\tVersion: [ 0 = Sequential| 1 = NativeParallel| 2 = Farm(FF)]\n\tThreshold: value in (0,1]\n\tOutput: [ 0 = Result| 1 = Time| 2 = More]\n\tOptional: Number of workers (>=0)\n")
 
 	int version = atoi(argv[1]); // Version
 	float k     = atof(argv[2]); // Threshold for the move detection (percentage in (0,1])
@@ -56,22 +56,10 @@ int main(int argc,char* argv[]) {
 		else if (out == 2) np.overhead();
 		else exit(1);	
 	}else if (version == 2) {
-		Pipe p(VIDEOSOURCE,k,nw);
-		if(out == 0) p.run();
-		else if (out == 1) p.time();
-		else if (out == 2) p.overhead();
-		else exit(1);	
-	}else if (version == 3) {
 		Farm f(VIDEOSOURCE,k,nw);
 		if(out == 0) f.run();
 		else if (out == 1) f.time();
 		else if (out == 2) f.overhead();
-		else exit(1);	
-	}else if (version == 4) {
-		MasterWorker mw(VIDEOSOURCE,k,nw);
-		if(out == 0) mw.run();
-		else if (out == 1) mw.time();
-		else if (out == 2) mw.overhead();
 		else exit(1);	
 	}else exit(1);
 
