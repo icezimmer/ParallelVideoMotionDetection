@@ -138,8 +138,9 @@ class NativeParallel {
                     }
                 };
 
-                thread tid_str(frame_streaming, totalf);
-                tid_str.join();
+            thread tid_str(frame_streaming, totalf);
+            tid_str.join();
+
             }
 
             cout << "Total frame: " << totalf << endl;
