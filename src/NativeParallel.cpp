@@ -156,25 +156,25 @@ class NativeParallel {
 
             long elapsed;
             {   
-            utimer u("NativeParallel",&elapsed);
-            threadPool tp(nw);
+                utimer u("NativeParallel",&elapsed);
+                threadPool tp(nw);
 
-            function<void(Mat)> work = [&] (Mat frame) { 
-                    totalDiff += vd->composition_pad(frame);
-                    return;
+                function<void(Mat)> work = [&] (Mat frame) { 
+                        totalDiff += vd->composition_pad(frame);
+                        return;
+                    };
+
+                auto frame_streaming = [&] (int totalf) {
+                    for(int f=0;f<totalf-1;f++){
+                        Mat frame;
+                        ERROR(!source->read(frame),"Error in read frame operation")
+                        auto work_frame = bind(work,frame);
+                        tp.submit(work_frame); //submit the task
+                    }
                 };
 
-            auto frame_streaming = [&] (int totalf) {
-                for(int f=0;f<totalf-1;f++){
-                    Mat frame;
-                    ERROR(!source->read(frame),"Error in read frame operation")
-                    auto work_frame = bind(work,frame);
-                    tp.submit(work_frame); //submit the task
-                }
-            };
-
-            thread tid_str(frame_streaming, totalf);
-            tid_str.join();
+                thread tid_str(frame_streaming, totalf);
+                tid_str.join();
             }
 
             cleanUp();
@@ -186,23 +186,23 @@ class NativeParallel {
 
             long elapsed;
             {   
-            utimer u("OVERHEAD [NativeParallel]",&elapsed);
-            threadPool tp(nw);
+                utimer u("OVERHEAD [NativeParallel]",&elapsed);
+                threadPool tp(nw);
 
-            function<void(Mat)> work = [] (Mat frame) { 
-                    return;
+                function<void(Mat)> work = [] (Mat frame) { 
+                        return;
+                    };
+
+                auto frame_streaming = [&] (int totalf) {
+                    for(int f=0;f<totalf-1;f++){
+                        Mat frame;
+                        auto work_frame = bind(work,frame);
+                        tp.submit(work_frame); //submit the task
+                    }
                 };
 
-            auto frame_streaming = [&] (int totalf) {
-                for(int f=0;f<totalf-1;f++){
-                    Mat frame;
-                    auto work_frame = bind(work,frame);
-                    tp.submit(work_frame); //submit the task
-                }
-            };
-
-            thread tid_str(frame_streaming, totalf);
-            tid_str.join();
+                thread tid_str(frame_streaming, totalf);
+                tid_str.join();
             }
 
             cleanUp();
