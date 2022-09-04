@@ -1,8 +1,7 @@
 class threadPool {
 
 private:
-    queue<function<void(void)>> tasks; // by packaged task we can get a future
-    //vector<future<void>> vf; // future of the tasks
+    queue<function<void(void)>> tasks;
     vector<thread> threads; // vector of threads (nm. of threads = size)
     mutex m;
     condition_variable c;
