@@ -24,5 +24,5 @@ Add the flag ``-fopt-info-vec-all`` to see all the optimizated loop (vectorizati
 
 To see the parallel degree<br>
 ```
-    for nw in {1..32}; do for t in {1..5}; do ./main 1 0.85 [0 | 1 | 2] $nw |& grep -Eo '[0-9]'; done; done
+    for nw in {1..32}; do ./main 1 0.85 [0 | 1 | 2] $nw; done
 ```

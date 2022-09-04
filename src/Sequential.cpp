@@ -36,10 +36,9 @@ class Sequential {
         this->height = source->get(CAP_PROP_FRAME_HEIGHT);
         this->totalf = source->get(CAP_PROP_FRAME_COUNT);
 
-        // We need at least 2 frame: one is the background, the other is the frame to compare
-        ERROR(totalf<3,"Too short video")
+        // We need at least 2 frame (one is the background)
+        ERROR(totalf<2,"Too short video")
 
-        // methods like RGBtoGrey, smoothing ecc..
         this->vd = new VideoDetection(width,height,k);
 
         // We retrieve the background ----
@@ -145,7 +144,6 @@ class Sequential {
         }
         cout << "READ: " << tot_r/(totalf-1) << ", RGBtoGrey: " << tot_g/(totalf-1) << ", RGBtoGrey_pad: " << tot_gp/(totalf-1) <<  ", SMOOTHING: " << tot_s/(totalf-1) << ", SMOOTHING_pad: " << tot_sp/(totalf-1) << ", DETECTION: " << tot_d/(totalf-1) << ", COMPOSITION: " << tot_c/(totalf-1) << ", COMPOSITION_pad: " << tot_cp/(totalf-1) << endl;
         cout << "std: " << tot_r+tot_g+tot_s+tot_d << endl;
-        cout << "std_pad: " << tot_r+tot_gp+tot_sp+tot_d << endl;
         cout << "comp: " << tot_c << endl;
         cout << "comp_pad: " << tot_cp << endl;
         

@@ -1,8 +1,8 @@
 class threadPool {
 
 private:
-    queue<packaged_task<void(void)>> tasks; // by packaged task we can get a future
-    vector<future<void>> vf; // future of the tasks
+    queue<function<void(void)>> tasks; // by packaged task we can get a future
+    //vector<future<void>> vf; // future of the tasks
     vector<thread> threads; // vector of threads (nm. of threads = size)
     mutex m;
     condition_variable c;
@@ -11,12 +11,12 @@ private:
 
     void body() {
         while(true) {
-            packaged_task<void(void)> tsk; //initialization
+            function<void(void)> tsk; //initialization
             {
                 unique_lock<mutex> l(this->m);
                 this->c.wait(l, [&](){ return (!this->tasks.empty() || this->stop); }); // wait until queue is not empty or the threadpool is stopped
                 if(!this->tasks.empty()){
-                    tsk = move(this->tasks.front());
+                    tsk = this->tasks.front();
                     this->tasks.pop();
                 }
                 if(this->stop) return;    
@@ -24,6 +24,8 @@ private:
             tsk();
         }
     }
+
+public:
 
     void stopThreadPool() {
         {
@@ -33,23 +35,15 @@ private:
         this->c.notify_all();
     }
 
-public:
-
     threadPool(int size) {
         this->size = size;
         this->stop = false;
-        // i task vengono assegnati al thread pool nel costruttore affinché siano eseguibili appena entrano nella coda
+
         for(int worker=0; worker<this->size; worker++)
             this->threads.emplace_back([this](){ this->body(); });
     }
 
     ~threadPool() {
-        //in this way i'm sure that all the result has been computed before that stop is setted to true
-        for(ulong i=0;i<vf.size();i++)
-            this->vf[i].get();
-
-        stopThreadPool();
-
         for(auto& thread : this->threads)
             thread.join();
     }
@@ -57,9 +51,7 @@ public:
     void submit(function<void(void)> fx) {
         {
             unique_lock<mutex> l(this->m);
-            packaged_task<void(void)> pt(fx);
-            this->vf.push_back(pt.get_future());
-            this->tasks.push(move(pt));
+            this->tasks.push(fx);
         }
         this->c.notify_one();
     }
@@ -75,7 +67,8 @@ class NativeParallel {
         int totalf;               // Number of total frame in the video
         VideoDetection* vd;
         Mat* background;          // Background images used for comparisons
-        ulong totalDiff;  // Variable used to accomulate frame "detected"
+        atomic<ulong> totalDiff;  // Variable used to accomulate frame "detected"
+        atomic<int> toCompute;    // Variable representing the number of task to compute
         int nw;                   // Number of workers
 
         void cleanUp() {
@@ -102,9 +95,10 @@ class NativeParallel {
             this->width  = source->get(CAP_PROP_FRAME_WIDTH);
             this->height = source->get(CAP_PROP_FRAME_HEIGHT);
             this->totalf = source->get(CAP_PROP_FRAME_COUNT);
+            this->toCompute = totalf-1; 
 
-            // We need at least 2 frame: one is the background, the other is the frame to compare
-            ERROR(totalf<3,"Too short video")
+            // We need at least 2 frame (one is the background)
+            ERROR(totalf<2,"Too short video")
 
             this->vd = new VideoDetection(width,height,k);
 
@@ -126,6 +120,8 @@ class NativeParallel {
 
                 function<void(Mat)> work = [&] (Mat frame) {
                     totalDiff += vd->composition_pad(frame);
+                    if(--toCompute == 0)
+                        tp.stopThreadPool();
                     return;
                 };
 
@@ -152,17 +148,18 @@ class NativeParallel {
 
 
         void time() {
-            // As before but in this case the measure the time execution
 
             long elapsed;
             {   
                 utimer u("NativeParallel",&elapsed);
                 threadPool tp(nw);
 
-                function<void(Mat)> work = [&] (Mat frame) { 
-                        totalDiff += vd->composition_pad(frame);
-                        return;
-                    };
+                function<void(Mat)> work = [&] (Mat frame) {
+                    totalDiff += vd->composition_pad(frame);
+                    if(--toCompute == 0)
+                        tp.stopThreadPool();
+                    return;
+                };
 
                 auto frame_streaming = [&] (int totalf) {
                     for(int f=0;f<totalf-1;f++){
@@ -173,8 +170,9 @@ class NativeParallel {
                     }
                 };
 
-                thread tid_str(frame_streaming, totalf);
-                tid_str.join();
+            thread tid_str(frame_streaming, totalf);
+            tid_str.join();
+
             }
 
             cleanUp();
@@ -182,27 +180,29 @@ class NativeParallel {
         }
 
         void overhead() {
-            // As before but in this case the measure the time execution
 
             long elapsed;
             {   
                 utimer u("OVERHEAD [NativeParallel]",&elapsed);
                 threadPool tp(nw);
 
-                function<void(Mat)> work = [] (Mat frame) { 
-                        return;
-                    };
+                function<void(Mat)> work = [&] (Mat frame) {
+                    if(--toCompute == 0)
+                        tp.stopThreadPool();
+                    return;
+                };
 
                 auto frame_streaming = [&] (int totalf) {
                     for(int f=0;f<totalf-1;f++){
                         Mat frame;
                         auto work_frame = bind(work,frame);
-                        tp.submit(work_frame); //submit the task
+                        tp.submit(work_frame);
                     }
                 };
 
-                thread tid_str(frame_streaming, totalf);
-                tid_str.join();
+            thread tid_str(frame_streaming, totalf);
+            tid_str.join();
+
             }
 
             cleanUp();

@@ -149,8 +149,8 @@ class FastFlow {
             this->height = source->get(CAP_PROP_FRAME_HEIGHT);
             this->totalf = source->get(CAP_PROP_FRAME_COUNT);
 
-            // We need at least 2 frame: one is the background, the other is the frame to compare
-            ERROR(totalf<3,"Too short video")
+            // We need at least 2 frame (one is the background)
+            ERROR(totalf<2,"Too short video")
     
             this->vd = new VideoDetection(width,height,k);
 

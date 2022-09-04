@@ -41,7 +41,7 @@ int main(int argc,char* argv[]) {
 	int version = atoi(argv[1]); // Version
 	float k     = atof(argv[2]); // Threshold for the move detection (percentage in (0,1])
 	int out     = atoi(argv[3]); // Type of output
-	int nw      = argc > 4 ? atoi(argv[4]) : thread::hardware_concurrency();
+	int nw      = argc > 4 ? atoi(argv[4]) : thread::hardware_concurrency(); // Number of workers
 
 	if (version == 0) {
 		Sequential s(VIDEOSOURCE,k);
